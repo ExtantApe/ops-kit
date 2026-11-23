@@ -10,3 +10,6 @@ Dated decisions for this repo, newest last.
   Every path is configurable, state goes in a state folder, estimate reads tasks and tags through adapters (a
   separate tags file or tags in task-log events), and resume works through an adapter on the shared task-log and
   ledger formats. Both teams agreed to the joint system and the public repo before this change.
+- 2026-11-23: topics-index gains `--stale` (read-only): topics older than their tasks' newest event, open tasks in no
+  topic, tasks in two topics, and closed or unknown tasks still listed. It supports a store rule that every open task
+  sits in exactly one topic's `Tasks:` line.
