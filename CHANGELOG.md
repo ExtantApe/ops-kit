@@ -10,4 +10,7 @@
 - CI now also runs every tool's tests under `*/tests/`.
 - Tested: each tool's own test script (made-up data in temp folders, cleaned up and checked for leftovers), the
   existing `tests/` suite and the leak check.
+- `topics-index`: `--sections` (or `TOPICS_SECTIONS`) sets the required sections. Now, Open and Log are built-in
+  aliases for Where it stands, Open questions and History. `## Don't` is an optional extra that never fails the check.
+  Tested: new cases for the flag, the env fallback, the aliases and Don't. Not tested: a real store's topic files.
 - Not tested: use against a second team's real store layout, and Python versions other than the one the tests ran on.
