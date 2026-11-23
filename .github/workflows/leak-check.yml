@@ -34,5 +34,9 @@ jobs:
         with:
           persist-credentials: false
       - run: python3 -W ignore -m unittest discover -s tests -v
+      - name: Tool tests
+        run: |
+          set -e
+          for t in */tests/test_*.py; do echo "== $t"; python3 -W ignore "$t"; done
       - name: Vendored copies match their locks
         run: if [ -f vendor.lock.json ]; then python3 vendor/vendor.py check; else echo "nothing vendored yet"; fi

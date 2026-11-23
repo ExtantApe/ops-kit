@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 2026-11-22: pace, estimate, store-check, resume, topics-index
+
+- Promises: pace verdicts, fail-closed, overrides, settings and a configurable state folder (49 checks);
+  estimate buckets and queue order, padding and learning, read-only toward the task store, and all three
+  task and tag layouts: log, rows, adapter (49 checks); store-check checks a to e, read-only, other paths and ID
+  shapes (28 checks); resume sections, windows, adapters and flags (22 checks); topics-index format, index and
+  `--check` (17 checks).
+- Every test removes its temp folders and checks the working folder for leftovers.
+- Gaps: none of this has run against a second team's real store layout, and the tools' text output is checked only
+  for the key lines, not its whole layout.
+
 ## 2026-11-22: after the first-public security review
 
 - Added tests for every finding: --share hides a private category (text and JSON); the adapter must be a .py file;
