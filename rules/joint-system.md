@@ -50,7 +50,7 @@ Untagged tasks come after tagged ones, and `status` marks them `[untagged]` so t
 Pace turns the usage numbers the owner can see (weekly percent, reset time, credits spent, credit cap, lanes running)
 into a verdict: GO HARD, STEADY, SHIP ONLY or QUEUE, and a lane ceiling. The ceiling is a hard limit. The owner can
 always override it. A team picks its target and reserve (for example, 90% used by each reset, 10% kept for errors and
-upkeep). Pace fails closed: when it can't tell, it never lifts a gate. See `pace/`.
+upkeep). Pace fails closed: when it can't tell, it never lifts a gate. See `pace/` and `rules/pace-and-heartbeat.md`.
 
 ## 4. Heartbeat
 
@@ -69,6 +69,8 @@ are closed with their evidence; everything else goes to the owner as one short l
   commit as the work, and read it first after any reset.
 - Commits name their task in a `Task: K12` trailer, so a task's work can be found from the history.
 - Every owner decision gets a task, or a note saying why none is needed. The morning check looks for the gap.
+- After a reset, `resume/resume.py` prints a session's open tasks and the recent decisions it hasn't acknowledged.
+  `topics-index/` holds the topic-file format and its index.
 
 ## 7. Vendoring
 
