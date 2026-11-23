@@ -5,6 +5,7 @@
   topics_index.py --check            # write nothing; exit 1 if the index is stale or a topic breaks the format
   topics_index.py --root DIR         # the store (default: $OPS_ROOT, else the current folder)
   topics_index.py --topics-dir DIR   # a topics folder that isn't ROOT/topics
+  topics_index.py --sections LIST    # required sections, comma-separated, in order (or $TOPICS_SECTIONS)
 
 The format is in topics-index/README.md. Local only, no network.
 """
@@ -12,8 +13,24 @@ import argparse, glob, os, re, sys
 
 ROOT = os.environ.get("OPS_ROOT") or os.getcwd()
 SECTIONS = ["Summary", "Where it stands", "Decisions", "Open questions", "History", "Sources"]
-ALIASES = {"D numbers": "Decisions"}      # an older heading for the same section
+# Other headings that count as the same section. Matching is exact, so "Open" is not "Open questions" until aliased.
+ALIASES = {"D numbers": "Decisions", "Now": "Where it stands", "Open": "Open questions", "Log": "History"}
+# Accepted and never required. A topic may leave them out or put them anywhere.
+OPTIONAL = ["Don't", "Don\u2019t"]
 MAX_SUMMARY = 20
+
+
+def canon(name):
+    return ALIASES.get(name.strip(), name.strip())
+
+
+def parse_sections(value):
+    """'Summary, Now ,Open' -> ['Summary', 'Where it stands', 'Open questions']"""
+    out = []
+    for part in value.split(","):
+        if part.strip() and canon(part) not in out:
+            out.append(canon(part))
+    return out
 
 
 def sections(text):
@@ -21,7 +38,7 @@ def sections(text):
     for line in text.splitlines():
         m = re.match(r"## (.+?)\s*$", line)
         if m:
-            cur = ALIASES.get(m.group(1), m.group(1))
+            cur = canon(m.group(1))
             out[cur] = []
         elif cur is not None:
             out[cur].append(line)
@@ -33,35 +50,36 @@ def one_line(s, n=140):
     return s if len(s) <= n else s[: n - 3].rstrip() + "..."
 
 
-def read_topic(path):
+def read_topic(path, required=None):
     """Return (entry, problems). entry has name, title, line, updated."""
     name = os.path.basename(path)[:-3]
     text = open(path, encoding="utf-8").read()
+    required = SECTIONS if required is None else required
     problems = []
     t = re.search(r"^# (.+?)\s*$", text, re.M)
     title = t.group(1) if t else name
     if not t: problems.append("no title line")
     sec = sections(text)
-    missing = [s for s in SECTIONS if s not in sec]
+    missing = [s for s in required if s not in sec]
     if missing: problems.append("missing sections: " + ", ".join(missing))
-    elif [s for s in sec if s in SECTIONS] != SECTIONS: problems.append("sections are out of order")
+    elif [s for s in sec if s in required] != required: problems.append("sections are out of order")
     body = [l for l in sec.get("Summary", [])]
     while body and not body[-1].strip(): body.pop()
     while body and not body[0].strip(): body.pop(0)
-    if len(body) > MAX_SUMMARY: problems.append(f"summary is {len(body)} lines, over {MAX_SUMMARY}")
+    if "Summary" in required and len(body) > MAX_SUMMARY: problems.append(f"summary is {len(body)} lines, over {MAX_SUMMARY}")
     first = next((l for l in body if l.strip()), "")
-    if not first: problems.append("summary is empty")
+    if "Summary" in required and not first: problems.append("summary is empty")
     dates = re.findall(r"^\s*[-*]?\s*(\d{4}-\d{2}-\d{2})\b", "\n".join(sec.get("History", [])), re.M)
-    if not dates: problems.append("history has no dated entry")
+    if "History" in required and not dates: problems.append("history has no dated entry")
     return dict(name=name, title=title, line=one_line(first), updated=max(dates) if dates else "undated"), problems
 
 
-def build(topics_dir):
+def build(topics_dir, required=None):
     entries, problems = [], {}
     for p in sorted(glob.glob(os.path.join(topics_dir, "*.md"))):
         if os.path.basename(p) in ("README.md", "INDEX.md"):
             continue
-        e, pr = read_topic(p)
+        e, pr = read_topic(p, required)
         entries.append(e)
         if pr: problems[e["name"]] = pr
     lines = ["# Topic index", "",
@@ -78,9 +96,15 @@ def main(argv=None):
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--root", default=ROOT)
     ap.add_argument("--topics-dir")
+    ap.add_argument("--sections", default=os.environ.get("TOPICS_SECTIONS"),
+                    help="required sections, comma-separated, in order (default $TOPICS_SECTIONS, else the built-in six)")
     a = ap.parse_args(argv)
     tdir = a.topics_dir or os.path.join(a.root, "topics")
-    text, problems = build(tdir)
+    required = parse_sections(a.sections) if a.sections else SECTIONS
+    if not required:
+        print("--sections names no sections", file=sys.stderr)
+        return 2
+    text, problems = build(tdir, required)
     out = os.path.join(tdir, "INDEX.md")
     for n, pr in sorted(problems.items()):
         print(f"{n}.md: " + "; ".join(pr), file=sys.stderr)
