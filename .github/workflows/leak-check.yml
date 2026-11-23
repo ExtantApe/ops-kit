@@ -1,0 +1,38 @@
+name: Checks
+
+# Every change, docs included: README or docs text is where a stray email address most often slips in.
+# A few seconds, no build tools, read-only.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  leak-check:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: bash scripts/leak-check.sh
+
+  tests:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: python3 -W ignore -m unittest discover -s tests -v
+      - name: Vendored copies match their locks
+        run: if [ -f vendor.lock.json ]; then python3 vendor/vendor.py check; else echo "nothing vendored yet"; fi
