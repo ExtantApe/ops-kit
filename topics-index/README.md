@@ -64,6 +64,29 @@ So a store whose topics use Summary, Now, Decisions, Open and Log runs with
 `## Don't` is an optional extra. A topic may include it anywhere or leave it out, and it never fails the check.
 The summary length rule applies only when `Summary` is required, and the dated-history rule only when `History` is.
 
+## Stale check
+
+```bash
+python3 topics-index/topics_index.py --root path/to/store --stale
+python3 topics-index/topics_index.py --stale --tasks path/to/log.jsonl --task-re "K\d+"
+```
+
+`--stale` writes nothing. It reads the task event log (default `ROOT/tasks/log.jsonl`, one JSON object per line with
+`id`, `op` and `ts`) and each topic's `Tasks:` lines, then lists:
+
+- topics whose newest History date is older than the newest event of a task they list,
+- open tasks that no topic lists,
+- tasks listed in more than one topic,
+- closed tasks still on a `Tasks:` line, and IDs the log doesn't know.
+
+It exits 1 if anything is listed, so a morning check can flag it. An `add` opens a task, `close` or `drop` closes it,
+`reopen` opens it again, and any event counts as a change. Dates are compared by day, so a topic updated the same day
+as the task event is current.
+
+A `Tasks:` line can sit anywhere in the topic, plain (`Tasks: K1, K2`), bold or as a list item (`- **Tasks:** K3`).
+`Tasks: none` is fine for a topic with no open tasks. The rule that goes with it: when a session adds, closes or notes
+a task, it updates that topic's `Tasks:` line and History in the same commit.
+
 ## Tests
 
 ```bash
